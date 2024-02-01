@@ -26,6 +26,46 @@
 #if USE_GUILE == 1
 #include <libguile.h>
 
+/* Structure returned by parsecmd() */
+
+typedef struct t_cell{
+	pid_t p;
+	t_cell * next;
+} cell;
+
+typedef struct {
+	t_cell *head;
+} list; 
+
+list *new_list(){
+	list *l;
+	l->head = NULL;
+
+	return l;
+}
+
+void add_cell(pid_t p, list *l){
+
+	cell *c = malloc(sizeof(t_cell));
+	c->p = p;
+	c->next = l->head;
+	l->head = c->next;
+}
+
+int remove_cell(pid_t p, list *l){
+
+	for (cell **c = &(l->head); (*c) != NULL; c = &((*c)->next))
+	{
+		if ((*c)->p == p)
+		{
+			*c = (*c)->next;
+		}
+		
+	}
+	
+
+}
+
 int question6_executer(char *line)
 {
 	/* Question 6: Insert your code to execute the command line
@@ -131,6 +171,8 @@ int main() {
 		}
 
 
+		list *pids = new_list();
+		pids
 		for (i = 0; l->seq[i]!=0; i++)
 		{
 			char **cmd = l->seq[0];
@@ -140,8 +182,10 @@ int main() {
 			if (p == 0)
 			{
 				execvp(cmd[0], cmd);
+			}else{
+				 
 			}
-			printf("%d",p);
+
 			if(!(l->bg)){
 				waitpid(p, &status,0);
 			}
