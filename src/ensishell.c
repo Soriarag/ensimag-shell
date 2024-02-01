@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -128,6 +129,24 @@ int main() {
                         }
 			printf("\n");
 		}
+
+
+		for (i = 0; l->seq[i]!=0; i++)
+		{
+			char **cmd = l->seq[0];
+	
+			pid_t p = fork();
+			int status;
+			if (p == 0)
+			{
+				execvp(cmd[0], cmd);
+			}
+			printf("%d",p);
+			if(!(l->bg)){
+				waitpid(p, &status,0);
+			}
+		}
+
 	}
 
 }
