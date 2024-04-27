@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -23,6 +24,7 @@
  * lines in CMakeLists.txt.
  */
 
+#include <sys/types.h>
 #if USE_GUILE == 1
 #include <libguile.h>
 
@@ -30,15 +32,15 @@
 
 typedef struct t_cell{
 	pid_t p;
-	t_cell * next;
+	struct t_cell * next;
 } cell;
 
-typedef struct {
-	t_cell *head;
+typedef struct t_list{
+	cell *head;
 } list; 
 
 list *new_list(){
-	list *l;
+	list *l = (list *)malloc(sizeof(list));
 	l->head = NULL;
 
 	return l;
@@ -46,10 +48,12 @@ list *new_list(){
 
 void add_cell(pid_t p, list *l){
 
-	cell *c = malloc(sizeof(t_cell));
+	cell *c = (cell*)malloc(sizeof(cell));
 	c->p = p;
 	c->next = l->head;
-	l->head = c->next;
+	l->head = c;
+
+	printf("cell added");
 }
 
 int remove_cell(pid_t p, list *l){
@@ -147,9 +151,7 @@ int main() {
 		  
 			terminate(0);
 		}
-		
 
-		
 		if (l->err) {
 			/* Syntax error, read another command */
 			printf("error: %s\n", l->err);
@@ -172,23 +174,46 @@ int main() {
 
 
 		list *pids = new_list();
-		pids
 		for (i = 0; l->seq[i]!=0; i++)
 		{
 			char **cmd = l->seq[0];
 	
-			pid_t p = fork();
+			pid_t pid = fork();
 			int status;
-			if (p == 0)
+			if (strcmp(cmd[0],"jobs") == 0)
 			{
+				cell **first =  &(pids->head);
+				cell *c = pids->head;
+				while (c != NULL)
+				{
+					printf("%d", c->p);
+					waitpid(c->p,&status,0);
+					if (WIFEXITED(status)){
+						*first = c->next;
+						free(c);
+						c = *first;
+					}else{
+						printf("pid %d\n", c->p);
+						first = &(c->next);
+						c = c->next;
+					}
+
+				}
+			}
+			
+			else if (pid == 0)
+			{
+
 				execvp(cmd[0], cmd);
+				
 			}else{
-				 
+				add_cell(pid, l);
+				if(!(l->bg)){
+					waitpid(pid, &status,0);
+				}
+
 			}
 
-			if(!(l->bg)){
-				waitpid(p, &status,0);
-			}
 		}
 
 	}
